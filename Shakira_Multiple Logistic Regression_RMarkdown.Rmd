@@ -1,0 +1,371 @@
+---
+title: "Shakira_Multiple Logistic Regression"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Logisitc Regression - Intro
+
+Logistic regression (LR) is a statistical method similar to linear regression since LR finds an equation that predicts an outcome for a binary variable, Y, from one or more response variables,X.
+
+# Get the dataset
+
+We will be using examples data from MI.sav file
+
+Research question
+To determine factor that associated with occurrence of MI
+
+Dependent variable – MI (Dichotomous “yes” and “No”)
+
+Independent variables 
+- Age (continuous) 
+- Gender (categorical “Male=1”, “Female=0”)
+- Hypertension (categorical “Hypertension =1” ,“Normal = 0”)
+- Smoking (categorical “Yes =1”, “ No = 0”)
+- Obesity (categorical “Yes = 1” ,“No =0”)
+
+To clear environment panel
+```{r}
+rm (list  = ls())
+```
+
+set working directory
+```{r}
+setwd("C:/Users/user/Desktop/PhD/Study Buddies/Shakira - logistic regression")
+```
+
+read MI data
+```{r}
+library(foreign)
+
+mydata <- read.spss("MI.sav", to.data.frame = TRUE, use.value.labels = FALSE)
+
+```
+
+
+Check data type
+
+```{r}
+summary(mydata)
+```
+
+```{r}
+head(mydata)
+```
+
+```{r}
+str(mydata)
+```
+```{r}
+
+```
+
+Right now, gender, diabetes, hpt, smoking, obesity and MI are in "number". 
+But its supposed to be a factor. 
+```{r}
+
+mydata$gender <- as.factor(mydata$gender)
+levels (mydata$gender) <- c ("Female", "Male")
+
+mydata$hpt <- as.factor(mydata$hpt)
+levels (mydata$hpt) <- c ("No", "Yes")
+
+mydata$smoking <- as.factor(mydata$smoking)
+levels (mydata$smoking) <- c ("No", "Yes")
+
+mydata$obesity <- as.factor(mydata$obesity)
+levels (mydata$obesity) <- c ("No", "Yes")
+
+mydata$MI <- as.factor(mydata$MI)
+levels (mydata$MI) <- c ("No", "Yes")
+
+
+str(mydata)
+summary(mydata)
+head(mydata)
+```
+
+
+#Univariable analysis (simple logistic regression)
+
+One dependent variable + one independent variable.
+
+##1) Age & MI
+
+The dependent variable is MI, a binary variable. 
+The predictor is age a numerical (continuous) variable
+```{r}
+age_mi <- glm(MI ~ age, data = mydata, family = binomial)
+summary(age_mi)
+```
+
+####Estimate the Odds ratio
+
+Difficult to interpret coefficient. We will use odds ratio
+```{r}
+exp(age_mi$coefficients)
+exp (confint(age_mi))
+
+```
+Interpretation
+- Age is significant at univariable analysis (p<0.001)
+- Crude adjusted OR = 1.07 (95% C1: 1.06, 1.08)
+- With increase one year of age, the odd of having MI was increased by 1.07 time without adjusted with other variables
+
+
+## 2) gender & MI
+
+```{r}
+sex_MI <- glm(MI ~ gender, data = mydata, family = binomial)
+summary(sex_MI)
+exp(sex_MI$coefficients)
+exp (confint(sex_MI))
+
+```
+
+Interpretation
+- Gender is not significant at univariable analysis (p>0.05)
+
+
+## 3) Hypertension & MI
+
+```{r}
+hpt_mi <- glm(MI ~ hpt, data = mydata, family = binomial)
+summary(hpt_mi)
+exp(hpt_mi$coefficients)
+exp(confint(hpt_mi))
+
+```
+
+Interpretation
+- Hypertension is significant at univariable analysis (p<0.001)
+- Crude OR = 2.6, 95% CI: 2.19, 3.09
+- The odd of having MI among those with hypertension was 2.6 time compared with   no hypertension without control with other variables
+OR
+- Those with hypertension are estimated to be 2.6 time chance to get MI compared   to those without hypertension without control with other variables
+
+
+## 4) Smoking & MI
+
+```{r}
+smoking_MI <- glm(MI ~ smoking, data = mydata, family = binomial)
+summary(smoking_MI)
+exp(smoking_MI$coefficients)
+exp (confint(smoking_MI))
+```
+Interpretation
+Smoking is significant at univariable analysis (p<0.001)
+Crude OR = 3.53  95% CI: 2.89, 4.33
+The odd of having MI among smoker was 3.5 time compared with non smoker without adjusted with others factor
+
+
+## 5) Obesity & MI
+
+```{r}
+obesity_MI <- glm(MI ~ obesity, data = mydata, family = binomial)
+summary(obesity_MI)
+exp(obesity_MI$coefficients)
+exp (confint(obesity_MI))
+```
+Interpretation
+Obesity is significant at univariable analysis (p<0.001)
+Crude OR = 2.51  95% CI: 2.08, 3.03
+The odd of having MI among obese person was 2.5 time compared with normal BMI without control with other factors
+
+
+
+#Multivariable analysis
+
+##Variable selection 
+Fit variable containing all predictor/Independent variables from univariable analysis with p value <0.25
+
+```{r}
+MI_logit1 <- glm(MI ~ age + gender + hpt + smoking + obesity, data = mydata, family = binomial)
+summary(MI_logit1)
+
+exp(MI_logit1$coefficients)
+exp (confint(MI_logit1))
+```
+
+
+Gender still not significant. Remove gender from the model 
+```{r}
+MI_logit2 <- glm(MI ~ age + hpt + smoking + obesity, data = mydata, family = binomial)
+summary(MI_logit2)
+
+exp(MI_logit2$coefficients)
+exp (confint(MI_logit2))
+```
+
+###Preliminary Final model
+The preliminary final model will be the model from MI_logit2 (model without gender)
+
+##Checking Multicollinearity 
+
+Multicollinearity corresponds to a situation where the data contain highly correlated predictor variables. 
+Multicollinearity is an important issue in regression analysis and should be fixed by removing the concerned variables. It can be assessed using the R function vif() [car package], which computes the variance inflation factors:
+
+```{r}
+car::vif(MI_logit2)
+
+```
+As a rule of thumb, a VIF value that exceeds 5 or 10 indicates a problematic amount of collinearity. 
+In this model, there is no collinearity: all variables have a value of VIF well below 5.
+
+
+##Checking Interaction
+
+An interaction occurs if the relation between one predictor, X, and the outcome (response) variable, Y, depends on the value of another independent variable, Z (Fisher, 1926)
+
+Check all two-way interaction terms one by one together with main effect model. 
+1. age_hpt
+2. age_smoking
+3. age_obesity
+4. hpt_smoking
+5. hpt_obesity
+6. smoking_obesity
+
+The interaction should be not significant (p>0.05) in the model
+```{r}
+#interaction age & hpt 
+MI_inter1 <- glm(MI ~ age + hpt + smoking + obesity + age*hpt, data = mydata, family = binomial)
+summary(MI_inter1)
+
+#interaction age & smoking 
+MI_inter2 <- glm(MI ~ age + hpt + smoking + obesity + age*smoking, data = mydata, family = binomial)
+summary(MI_inter2)
+
+#interaction age & obesity 
+MI_inter3 <- glm(MI ~ age + hpt + smoking + obesity + age*obesity, data = mydata, family = binomial)
+summary(MI_inter3)
+
+#interaction age & obesity 
+MI_inter4 <- glm(MI ~ age + hpt + smoking + obesity + hpt*smoking, data = mydata, family = binomial)
+summary(MI_inter4)
+
+#interaction age & obesity 
+MI_inter5 <- glm(MI ~ age + hpt + smoking + obesity + hpt*obesity, data = mydata, family = binomial)
+summary(MI_inter5)
+
+#interaction age & obesity 
+MI_inter6 <- glm(MI ~ age + hpt + smoking + obesity + smoking*obesity, data = mydata, family = binomial)
+summary(MI_inter6)
+```
+In this model, there is no interaction detected.
+
+
+##Checking Model Fitness
+
+1) Hosmer Lameshow test 
+ - It compare discrepancy between expected probability with the observed    
+   probability. 
+ - The model is fit if there is no significant difference between expected and  
+   observed probability (p>0.05)
+
+```{r}
+#1) Hosmer Lameshow test
+    ## install.packages("ResourceSelection")
+library(ResourceSelection)
+MI_hosmer = hoslem.test(MI_logit2$y, MI_logit2$fitted.values)
+MI_hosmer
+```
+
+2) Classification Table
+ - overall percentage correct - good if more than 80%
+ 
+```{r}
+#2 Classification table
+mydata$MI_prob = MI_logit2$fitted.values
+head(mydata[c("MI", "MI_prob")])
+mydata$MI_pred = cut(mydata$MI_prob, breaks = c(-Inf, 0.5, Inf), 
+                        labels = c("No MI", "MI_prob"))
+head(mydata[c("MI", "MI_prob", "MI_pred")])
+table(mydata$MI, mydata$MI_pred)
+```
+```{r}
+# correctly classified %
+100 * (829) / (484+829)  
+``` 
+Based on classification table, the overall percentage correct is 63.13% (<80%)
+
+
+
+3) Area under ROC (receiver operating curve)
+ - to assess mode discrimination. 
+ - the recommended area under ROC is >70%
+```{r}
+#ROC
+roc_MI = lroc(MI_logit2)
+```
+```{r}
+##Area under ROC
+roc_MI$auc
+```
+Based on AUC, the model can accurately discriminate 75.89% of the cases
+
+### we assume the model fit based on 2/3 criteria (hosmer lameshow & ROC)
+
+
+#Final model 
+
+You can rename the selected final mode
+```{r}
+MI_final = MI_logit2
+```
+
+ 
+```{r}
+# Final model
+summary(MI_final)
+exp(MI_logit1$coefficients)
+exp (confint(MI_logit1))
+```
+
+
+###R-squared
+R-squared is usually reported for linear regression. But R-squared is also available for GLM, in our case logistic regression. This is usually known as pseudo-R-squared. In GLM, it is made possible by the work of Zhang (2016), the author of "rsq" package.
+```{r}
+install.packages("rsq")
+library(rsq)
+rsq(MI_final, adj = T) 
+```
+ 
+#Interpretation 
+
+Age, diabetes, hypertension, smoking and obesity were significantly associated with the occurrence of Myocardial Infarction (MI)
+
+Example interpretation for each predictor variables
+
+1) With increase 1 year of age, a person has a 1.08 times the odd to have MI (Adjusted OR = 1.08, 95% CI:1.07, 1.09 , p value<0.001) after adjusted with other variables.
+
+2) Those with hypertension has 2.84 the odd of having MI compared to non hypertension (Adjusted OR = 2.84, 95% CI:2.35, 3.44 , p value<0.001) after adjusted with other variables.
+
+
+
+##Additional - Draw probabilites graph
+
+```{r}
+#Create new data .frame that contains the probabilities of having MI along with actual MI
+predicted.data <- data.frame (probability.of.MI = MI_final$fitted.values, MI= mydata$MI)
+
+#Sort the data.frame from low probabilities to high probabilities
+predicted.data <- predicted.data[order(predicted.data$probability.of.MI, decreasing = FALSE),]
+
+#add new column to the data.frame that hs the rank of each sample from low to high probabilities
+predicted.data$rank <- 1:nrow(predicted.data)
+
+#load the ggplot2 library to draw the graph
+#load cowplot library so that ggplot has nice looking defaults
+install.packages("ggplot2")
+library(ggplot2)
+install.packages(cowplot)
+library(cowplot)
+
+#call ggplot() and use geom_point() to draw the data
+
+ggplot(data=predicted.data, aes(x = rank, y = probability.of.MI)) + geom_point(aes(color = MI), alpha = 1, shape = 4, stroke = 2) + xlab("Index") + ylab("Predicted probability of getting Myocardial Infarction")
+```
+
