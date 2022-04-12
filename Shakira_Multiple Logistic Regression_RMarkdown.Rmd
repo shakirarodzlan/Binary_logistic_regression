@@ -13,7 +13,7 @@ Logistic regression (LR) is a statistical method similar to linear regression si
 
 # Get the dataset
 
-We will be using examples data from MI.sav file
+We will be used examples data from MI.sav file
 
 Research question
 To determine factor that associated with occurrence of MI
